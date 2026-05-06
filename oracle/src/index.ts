@@ -41,7 +41,7 @@ app.post('/verify', (req, res) => {
     });
 });
 
-const PORT = 3002;
+const PORT = process.env.PORT || 3002;
 app.listen(PORT, () => {
     console.log(`[Oracle] Paychain Compliance Oracle running on port ${PORT}`);
 });
