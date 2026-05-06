@@ -46,7 +46,39 @@ For the POC, we should implement a **Simulated L1 Node**.
 
 ---
 
-## 4. Technical Feasibility of "Millions of DSCs/sec"
+## 4. Consensus Mechanism Analysis
+
+### Validator/Mining Nodes: PoW vs PoS
+For the Paychain L1 network, we evaluate two primary consensus models:
+
+#### Proof of Work (PoW)
+- **Concept:** Validators (miners) compete to solve computationally intensive puzzles to secure the network.
+- **Pros:**
+    - **Proven Security:** Deeply battle-tested (Bitcoin).
+    - **True Decentralization:** Easier for anyone with hardware to participate without needing an initial stake.
+- **Cons:**
+    - **Energy Intensity:** Incompatible with modern ESG standards for institutional finance.
+    - **Throughput Bottleneck:** Difficult to achieve "millions of DSCs/sec" due to block time constraints and hardware latency.
+
+#### Proof of Stake (PoS)
+- **Concept:** Validators are chosen to produce blocks based on the amount of native tokens (PAY) they have staked.
+- **Pros:**
+    - **High Throughput:** Optimized for fast finality (target: <1 second) and parallel DSC execution.
+    - **Sustainability:** Negligible energy footprint.
+    - **Economic Security:** Malicious actors lose their stake (slashing).
+- **Cons:**
+    - **"Rich Get Richer":** Governance and rewards tend to centralize around large stakers.
+
+**Decision for Paychain:** A high-performance **Proof of Stake (PoS)** model is recommended to support the required transaction volume, while potentially incorporating a hybrid **PoW phase** for the initial token distribution to ensure decentralization.
+
+### Oracle Network: Proof of Stake (PoS)
+The Oracle layer *must* use **Proof of Stake (PoS)**.
+- **Why?** Oracle integrity relies on "skin in the game." Oracle operators stake PAY tokens to back the accuracy of their compliance signatures. 
+- **Slashing:** If an Oracle signs a fraudulent DSC payout or fails a verification audit, their stake is automatically slashed. This provides an economic guarantee of compliance that PoW cannot match.
+
+---
+
+## 5. Technical Feasibility of "Millions of DSCs/sec"
 To achieve this, the L1 must use:
 -   **Parallel Execution:** Since each DSC is independent (one-off), they can be processed in parallel across multiple CPU cores without state contention.
 -   **Minimal State:** Once a DSC expires or completes, its state can be pruned from the active ledger, keeping the "hot" state size extremely small.

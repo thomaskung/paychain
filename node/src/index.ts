@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import axios from 'axios';
 import { Ledger } from './ledger';
 import { VM } from './vm';
 import type { Transaction, Block } from './types';
@@ -26,38 +27,36 @@ const genesisBlock: Block = {
 };
 chain.push(genesisBlock);
 
-// Block Production Loop (Simulated Consensus)
+const PEERS = process.env.PEERS ? process.env.PEERS.split(',') : [];
+
 setInterval(() => {
-    if (mempool.length > 0 || true) {
+    if (mempool.length > 0) {
         const prevBlock = chain[chain.length - 1];
         if (!prevBlock) return;
 
         const transactions = [...mempool];
         mempool = [];
 
-        // 1. Transaction Execution & Base Fee Burn
         const BASE_FEE = 10; 
         transactions.forEach(tx => {
             try {
                 const account = ledger.getOrCreateAccount(tx.sender);
-                if (account.balance < BASE_FEE) throw new Error("Cannot afford gas");
-                
-                // Burn 50%, Treasury 50% (Simplified)
-                account.balance -= BASE_FEE;
-                ledger.totalBurned += BASE_FEE * 0.5;
-                ledger.treasuryBalance += BASE_FEE * 0.5;
-
+                // Simple gas check (disabled for POC if balance is insufficient so test wallets don't get stuck)
+                if (account.balance >= BASE_FEE) {
+                    account.balance -= BASE_FEE;
+                    ledger.totalBurned += BASE_FEE * 0.5;
+                    ledger.treasuryBalance += BASE_FEE * 0.5;
+                }
                 vm.executeTransaction(tx);
             } catch (e: any) {
                 console.error(`[Node] Transaction failed: ${e.message}`);
             }
         });
 
-        // 2. Block Rewards (Inflationary Mining)
         const BLOCK_REWARD = 50;
         const validator = ledger.getOrCreateAccount("0xVALIDATOR_NODE");
-        validator.balance += BLOCK_REWARD * 0.8; // 80% to validator
-        ledger.treasuryBalance += BLOCK_REWARD * 0.2; // 20% to Treasury/Governance
+        validator.balance += BLOCK_REWARD * 0.8; 
+        ledger.treasuryBalance += BLOCK_REWARD * 0.2; 
 
         vm.processExpirations();
 
@@ -69,10 +68,10 @@ setInterval(() => {
             hash: crypto.createHash('sha256').update(prevBlock.hash + JSON.stringify(transactions)).digest('hex')
         };
         chain.push(block);
+        console.log(`[Node] Block ${block.index} minted with ${transactions.length} txs`);
     }
-}, 1000);
+}, 3000);
 
-// API Endpoints
 app.get('/status', (req, res) => {
     res.json({
         chainLength: chain.length,
@@ -81,26 +80,51 @@ app.get('/status', (req, res) => {
         burned: ledger.totalBurned,
         accounts: Array.from(ledger.accounts.values()),
         pscs: Array.from(ledger.pscs.values()),
-        dscs: Array.from(ledger.dscs.values()),
-        proposals: Array.from(ledger.proposals.values())
+        dscs: Array.from(ledger.dscs.values())
     });
 });
 
 app.post('/tx', (req, res) => {
     const tx: Transaction = {
-        id: crypto.randomUUID(),
-        timestamp: Date.now(),
-        ...req.body
+        id: req.body.id || crypto.randomUUID(),
+        timestamp: req.body.timestamp || Date.now(),
+        type: req.body.type,
+        sender: req.body.sender,
+        payload: req.body.payload,
+        signature: req.body.signature,
+        isForwarded: req.body.isForwarded
     };
+
+    // Deduplication
+    if (mempool.some(t => t.id === tx.id) || chain.some(b => b.transactions.some(t => t.id === tx.id))) {
+        return res.json({ success: true, txId: tx.id });
+    }
+
     mempool.push(tx);
+
+    // Broadcast to peers to simulate immutability
+    if (!tx.isForwarded) {
+        PEERS.forEach(peer => {
+            axios.post(`${peer}/tx`, { ...tx, isForwarded: true }).catch(() => {});
+        });
+    }
+
     res.json({ success: true, txId: tx.id });
 });
 
+// Airdrop endpoint for the POC simulation
+app.post('/mint', (req, res) => {
+    const { address, amount } = req.body;
+    ledger.updateBalance(address, amount);
+    console.log(`[Node] Minted ${amount} PAY to ${address}`);
+    res.json({ success: true });
+});
+
 app.get('/blocks', (req, res) => {
-    res.json(chain.slice(-20)); // Last 20 blocks
+    res.json(chain.slice(-20));
 });
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-    console.log(`[Node] Paychain L1 Node running on port ${PORT}`);
+    console.log(`[Node] Paychain L1 Node running on port ${PORT}. Peers: ${PEERS.length}`);
 });
