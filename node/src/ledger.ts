@@ -1,4 +1,4 @@
-import { Account, Address, PSC, DSC } from './types';
+import { Account, Address, PSC, DSC, GovernanceProposal } from './types';
 
 export class Ledger {
     accounts: Map<Address, Account> = new Map();

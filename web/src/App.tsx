@@ -1,12 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
-  Activity, 
   ShieldCheck, 
   Zap, 
   Database, 
-  ArrowRight, 
-  Clock, 
   Wallet,
   AlertCircle
 } from 'lucide-react';
@@ -18,14 +15,14 @@ const ORACLE_URL = 'http://localhost:3002';
 function App() {
   const [status, setStatus] = useState<any>(null);
   const [blocks, setBlocks] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('wallet');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
   // Form states
   const [pscName, setPscName] = useState('TestCoin');
   const [activeAddress, setActiveAddress] = useState('0x2222222222222222222222222222222222222222'); // Wallet B default
-  const [mintAmount, setMintAmount] = useState(100);
+  const [mintAmount] = useState(100);
   const [dscRecipient, setDscRecipient] = useState('0x3333333333333333333333333333333333333333');
   const [dscAmount, setDscAmount] = useState(50);
   const [dscLifespan, setDscLifespan] = useState(60);
@@ -158,8 +155,9 @@ function App() {
            </select>
         </div>
         <nav className="nav">
-          <button onClick={() => setActiveTab('dashboard')} className={activeTab === 'dashboard' ? 'active' : ''}>Dashboard</button>
-          <button onClick={() => setActiveTab('node')} className={activeTab === 'node' ? 'active' : ''}>Node Status</button>
+          <button onClick={() => setActiveTab('wallet')} className={activeTab === 'wallet' ? 'active' : ''}>Wallet</button>
+          <button onClick={() => setActiveTab('services')} className={activeTab === 'services' ? 'active' : ''}>Services</button>
+          <button onClick={() => setActiveTab('explorer')} className={activeTab === 'explorer' ? 'active' : ''}>Explorer</button>
         </nav>
       </header>
 
@@ -172,8 +170,8 @@ function App() {
           </div>
         )}
 
-        {activeTab === 'dashboard' ? (
-          <div className="dashboard">
+        {activeTab === 'wallet' && (
+          <div className="view wallet-view">
             <section className="controls">
               <div className="card security-lab">
                 <h2><ShieldCheck size={20} /> Security Lab</h2>
@@ -191,7 +189,7 @@ function App() {
                   <button onClick={() => {
                     const hackerWallet = '0xHACKER_WALLET_ADDRESS';
                     setDscRecipient(hackerWallet);
-                    setMessage('CRITICAL: Session Hijacked! Recipient changed to Hacker Wallet. Check Step 1.');
+                    setMessage('CRITICAL: Session Hijacked! Recipient changed to Hacker Wallet. Check Wallet actions.');
                   }} className="btn-danger">Test Session Hijack</button>
 
                   <button onClick={() => {
@@ -202,30 +200,11 @@ function App() {
               </div>
 
               <div className="card">
-                <h2><Zap size={20} /> Step 1: Initialize DSC</h2>
-                <p>Define recipient and amount. This whitelist the sender and recipient.</p>
+                <h2><Zap size={20} /> Initialize DSC</h2>
+                <p>Define recipient and amount to whitelist the transaction.</p>
                 <input value={dscRecipient} onChange={e => setDscRecipient(e.target.value)} placeholder="Recipient Address" />
                 <input type="number" value={dscAmount} onChange={e => setDscAmount(Number(e.target.value))} placeholder="Amount" />
                 <button onClick={() => deployDSC(status?.pscs[0]?.address)} disabled={loading}>Initialize DSC</button>
-              </div>
-
-              <div className="card">
-                <h2><Database size={20} /> PSC Actions (Token/Swap)</h2>
-                <p>Manage PSCs or use DSC for a secure Swap.</p>
-                <select onChange={e => setPscName(e.target.value)}>
-                  <option value="">Select PSC</option>
-                  {status?.pscs.map((p: any) => <option key={p.address} value={p.address}>{p.state.name} ({p.address})</option>)}
-                </select>
-                <div className="button-group">
-                   <button onClick={() => mintTokens(pscName)} disabled={loading}>Mint Tokens</button>
-                   <button onClick={() => deployDSC(undefined, pscName, 'swap')} className="btn-secondary" disabled={loading}>Secure Swap (via DSC)</button>
-                </div>
-              </div>
-
-              <div className="card">
-                <h2>System Admin</h2>
-                <input value={pscName} onChange={e => setPscName(e.target.value)} placeholder="Token Name" />
-                <button onClick={deployPSC} disabled={loading} className="btn-secondary">Deploy New Token PSC</button>
               </div>
             </section>
 
@@ -274,8 +253,36 @@ function App() {
               </div>
             </section>
           </div>
-        ) : (
-          <div className="node-status">
+        )}
+
+        {activeTab === 'services' && (
+          <div className="view services-view">
+             <section className="controls">
+                <div className="card">
+                  <h2><Database size={20} /> PSC Actions (Token/Swap)</h2>
+                  <p>Manage PSCs or use DSC for a secure Swap.</p>
+                  <select onChange={e => setPscName(e.target.value)}>
+                    <option value="">Select PSC</option>
+                    {status?.pscs.map((p: any) => <option key={p.address} value={p.address}>{p.state.name} ({p.address})</option>)}
+                  </select>
+                  <div className="button-group">
+                     <button onClick={() => mintTokens(pscName)} disabled={loading}>Mint Tokens</button>
+                     <button onClick={() => deployDSC(undefined, pscName, 'swap')} className="btn-secondary" disabled={loading}>Secure Swap (via DSC)</button>
+                  </div>
+                </div>
+
+                <div className="card">
+                  <h2>System Admin</h2>
+                  <p>Deploy a new Permanent Smart Contract to the network.</p>
+                  <input value={pscName} onChange={e => setPscName(e.target.value)} placeholder="Token Name" />
+                  <button onClick={deployPSC} disabled={loading} className="btn-secondary">Deploy New Token PSC</button>
+                </div>
+             </section>
+          </div>
+        )}
+
+        {activeTab === 'explorer' && (
+          <div className="view explorer-view">
              <div className="card">
                 <h2>Blockchain Explorer</h2>
                 <div className="list">

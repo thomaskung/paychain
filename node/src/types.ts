@@ -76,3 +76,12 @@ export interface Account {
     stakedAmount: number; 
     tokenBalances: Record<Address, number>; 
 }
+
+export interface GovernanceProposal {
+    id: string;
+    proposer: Address;
+    description: string;
+    votesFor: number;
+    votesAgainst: number;
+    status: "OPEN" | "PASSED" | "REJECTED" | "EXECUTED";
+}

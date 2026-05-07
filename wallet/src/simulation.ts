@@ -134,7 +134,7 @@ async function performDSCTransfer(sender: string, recipient: string, amount: num
 
     let oracleSignature = null;
     if (oracle) {
-        const oRes = await axios.post(`${ORACLE_URL}/check`, { sender, recipient, amount });
+        const oRes = await axios.post(`${ORACLE_URL}/verify`, { sender, recipient, amount });
         oracleSignature = oRes.data.signature;
     }
 
